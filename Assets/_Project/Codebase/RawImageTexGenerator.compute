@@ -1,0 +1,42 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+struct Tile
+{
+    int type;
+};
+
+RWTexture2D<float4> Result;
+SamplerState PointRepeatSampler;
+int WorldSpaceSize;
+int PPU;
+
+StructuredBuffer<Tile> Tiles;
+
+Texture2D DirtTexture;
+Texture2D WaterTexture;
+Texture2D StoneTexture;
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int row = id.y / PPU;
+    int col = id.x / PPU;
+        
+    Tile tile = Tiles[row + col * WorldSpaceSize];
+    int type = tile.type;
+    
+    if (type == 1)
+        Result[id.xy] = DirtTexture.SampleLevel(PointRepeatSampler, id.xy  / (float)WorldSpaceSize, 0);
+    else if (type == 2)
+        Result[id.xy] = WaterTexture.SampleLevel(PointRepeatSampler, id.xy  / (float)WorldSpaceSize, 0);
+    else if (type == 3)
+        Result[id.xy] = StoneTexture.SampleLevel(PointRepeatSampler, id.xy  / (float)WorldSpaceSize, 0);
+    else
+        Result[id.xy] = float4(0,0,0,0);
+    
+    //Result[id.xy] = sampleTexture.SampleLevel(PointRepeatSampler, id.xy  / (float)WorldSpaceSize, 0);
+    //Result[id.xy] = sampleTexture.SampleLevel(PointRepeatSampler, id.xy  / (float)PPU, 0); //for size based on PPU
+}
